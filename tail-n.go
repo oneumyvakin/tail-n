@@ -1,3 +1,4 @@
+// Package implements tail -n which returns last n lines of file
 package tail_n
 
 import (
