@@ -14,22 +14,31 @@ func Tail(path string, n int) ([]string, error) {
 	return tail, err
 }
 
-// TailReverse returns reversed slice of last n strings from file in path
+// TailReverse returns reversed slice of last n strings from file
 func TailReverse(path string, n int) ([]string, error) {
 	tail, _, err := tail(path, n, nil, false)
 	return tail, err
 }
 
-// TailBytes returns slice bytes divided by n new lines from file in path
+// TailBytes returns bytes of last n strings from file
 func TailBytes(path string, n int) ([]byte, error) {
 	_, tail, err := tail(path, n, nil, true)
 	return tail, err
 }
 
-// TailBytesReverse returns reversed slice of bytes divided by n new lines from file in path
+// TailBytesReverse returns bytes of last n string from file in reversed order
 func TailBytesReverse(path string, n int) ([]byte, error) {
 	_, tail, err := tail(path, n, nil, false)
 	return tail, err
+}
+
+// Ftail writes bytes of last n strings from file path and returns number of written bytes
+func Ftail(w io.Writer, path string, n int) (int, error) {
+	_, tail, err := tail(path, n, nil, true)
+	if err != nil {
+		return 0, err
+	}
+	return w.Write(tail)
 }
 
 func tail(path string, n int, logger *log.Logger, keepOrder bool) (tail []string, tailBytes []byte, err error) {
