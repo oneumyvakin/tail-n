@@ -2,55 +2,51 @@
 package tail_n
 
 import (
+	"errors"
+	"fmt"
 	"io"
-	"io/ioutil"
-	"log"
 	"os"
 )
 
 // Tail returns slice of last n strings from file in path
 func Tail(path string, n int) ([]string, error) {
-	tail, _, err := tail(path, n, nil, true)
+	tail, _, err := tail(path, n, true)
 	return tail, err
 }
 
 // TailReverse returns reversed slice of last n strings from file
 func TailReverse(path string, n int) ([]string, error) {
-	tail, _, err := tail(path, n, nil, false)
+	tail, _, err := tail(path, n, false)
 	return tail, err
 }
 
 // TailBytes returns bytes of last n strings from file
 func TailBytes(path string, n int) ([]byte, error) {
-	_, tail, err := tail(path, n, nil, true)
+	_, tail, err := tail(path, n, true)
 	return tail, err
 }
 
 // TailBytesReverse returns bytes of last n string from file in reversed order
 func TailBytesReverse(path string, n int) ([]byte, error) {
-	_, tail, err := tail(path, n, nil, false)
+	_, tail, err := tail(path, n, false)
 	return tail, err
 }
 
 // Ftail writes bytes of last n strings from file path and returns number of written bytes
 func Ftail(w io.Writer, path string, n int) (int, error) {
-	_, tail, err := tail(path, n, nil, true)
+	_, tail, err := tail(path, n, true)
 	if err != nil {
 		return 0, err
 	}
 	return w.Write(tail)
 }
 
-func tail(path string, n int, logger *log.Logger, keepOrder bool) (tail []string, tailBytes []byte, err error) {
+func tail(path string, n int, keepOrder bool) (tail []string, tailBytes []byte, err error) {
 	if n <= 0 {
 		return
 	}
-	if logger == nil {
-		logger = log.New(ioutil.Discard, "", log.Ldate)
-	}
 	file, err := os.Open(path)
 	if err != nil {
-		logger.Printf("Failed to open file %s: %s\n", path, err)
 		return
 	}
 	defer file.Close()
@@ -63,21 +59,20 @@ func tail(path string, n int, logger *log.Logger, keepOrder bool) (tail []string
 	for i := offsetEnd - 1; i >= 0; i-- {
 		_, err = file.ReadAt(cursor, i)
 		if err != nil {
-			logger.Printf("Failed to read at %d: %s\n", i, err)
+			err = errors.New(fmt.Sprintf("Failed to read at %d: %s\n", i, err))
 			break
-
 		}
 
 		if cursor[0] == nl[0] {
 			_, err = file.Seek(i+1, io.SeekStart)
 			if err != nil {
-				logger.Printf("Failed to seek at %d: %s\n", i, err)
+				err = errors.New(fmt.Sprintf("Failed to seek at %d: %s\n", i, err))
 				break
 			}
 			newString := make([]byte, newStringEnd-i)
 			_, err = file.Read(newString)
 			if err != nil {
-				logger.Printf("Failed to read new line at %d: %s\n", i, err)
+				err = errors.New(fmt.Sprintf("Failed to read new line at %d: %s\n", i, err))
 				break
 			}
 			tail = append(tail, string(newString))
@@ -115,6 +110,5 @@ func mergeBytes(list [][]byte) (merged []byte) {
 	for _, item := range list {
 		merged = append(merged, item...)
 	}
-
 	return
 }
