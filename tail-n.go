@@ -64,6 +64,11 @@ func tail(path string, n int, keepOrder bool) (tail []string, tailBytes []byte, 
 		}
 
 		if cursor[0] == nl[0] {
+			if newStringEnd == i+1 {
+				tail = append(tail, "\n")
+				tmpBytes = append(tmpBytes, nl)
+				continue
+			}
 			_, err = file.Seek(i+1, io.SeekStart)
 			if err != nil {
 				err = errors.New(fmt.Sprintf("Failed to seek at %d: %s\n", i, err))
