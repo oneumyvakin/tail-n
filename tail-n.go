@@ -53,6 +53,7 @@ func tail(path string, n int, keepOrder bool) (tail []string, tailBytes []byte, 
 
 	nl := []byte("\n")
 	offsetEnd, err := file.Seek(0, io.SeekEnd)
+	newStringStart := offsetEnd
 	newStringEnd := offsetEnd
 	cursor := make([]byte, 1)
 	var tmpBytes [][]byte
@@ -63,21 +64,25 @@ func tail(path string, n int, keepOrder bool) (tail []string, tailBytes []byte, 
 			break
 		}
 
-		if cursor[0] == nl[0] {
-			if newStringEnd == i+1 {
+		if cursor[0] == nl[0] || i == 0 {
+			if newStringEnd == i {
 				tail = append(tail, "\n")
 				tmpBytes = append(tmpBytes, nl)
 				continue
 			}
-			_, err = file.Seek(i+1, io.SeekStart)
+			newStringStart = i + 1
+			if i == 0 {
+				newStringStart = 0
+			}
+			_, err = file.Seek(newStringStart, io.SeekStart)
 			if err != nil {
-				err = errors.New(fmt.Sprintf("Failed to seek at %d: %s\n", i, err))
+				err = errors.New(fmt.Sprintf("Failed to seek at %d: %s\n", newStringStart, err))
 				break
 			}
-			newString := make([]byte, newStringEnd-i)
+			newString := make([]byte, newStringEnd-newStringStart)
 			_, err = file.Read(newString)
 			if err != nil {
-				err = errors.New(fmt.Sprintf("Failed to read new line at %d: %s\n", i, err))
+				err = errors.New(fmt.Sprintf("Failed to read new line at %d: %s\n", newStringStart, err))
 				break
 			}
 			tail = append(tail, string(newString))
@@ -85,7 +90,7 @@ func tail(path string, n int, keepOrder bool) (tail []string, tailBytes []byte, 
 			if len(tail) >= n {
 				break
 			}
-			newStringEnd = i
+			newStringEnd = newStringStart
 		}
 	}
 
